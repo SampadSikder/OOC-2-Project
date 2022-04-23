@@ -1,0 +1,3 @@
+Sampad,1219,Manager,1000000.200000
+Miraj,101,Asst Secretary,100000.000000
+Sakib,102,Secretary,250000.230000
