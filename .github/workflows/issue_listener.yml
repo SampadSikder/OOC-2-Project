@@ -1,0 +1,46 @@
+name: Issue Listener
+
+      on:
+        issues:
+          types: [opened]
+
+      jobs:
+        post_issue_to_backend:
+          runs-on: ubuntu-latest
+          steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Post issue to backend
+              env:
+                ISSUE_URL: ${{ github.event.issue.html_url }}
+                ISSUE_SUMMARY: ${{ github.event.issue.title }}
+                ISSUE_DESCRIPTION: ${{ github.event.issue.body }}
+                COMMIT_ID: "436852641314e4561231ed3c99d86b2491415673"
+              run: |
+                COMMIT=$(git rev-parse HEAD)
+                COMMIT_TIMESTAMP_RAW=$(git show -s --format=%ct 436852641314e4561231ed3c99d86b2491415673)
+                REPORT_TIMESTAMP_RAW=$(date +%s)
+
+                COMMIT_TIMESTAMP=$(date -d @${COMMIT_TIMESTAMP_RAW} +"%Y-%m-%d %H:%M:%S")
+                REPORT_TIMESTAMP=$(date -d @${REPORT_TIMESTAMP_RAW} +"%Y-%m-%d %H:%M:%S")
+
+                RESPONSE=$(curl -X POST https://ffa3-103-198-136-205.ngrok-free.app/api/v2/issues \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "issueURL": "'"$ISSUE_URL"'",
+                  "issueSummary": "'"$ISSUE_SUMMARY"'",
+                  "issueDescription": "'"$ISSUE_DESCRIPTION"'",
+                  "commit": "'"$COMMIT"'",
+                  "commitTimestamp": "'"$COMMIT_TIMESTAMP"'",
+                  "reportTimestamp": "'"$REPORT_TIMESTAMP"'"
+                }')
+
+                echo "Backend response: $RESPONSE"
+
+                curl -X POST https://api.github.com/repos/SampadSikder/OOC-2-Project/issues/${{ github.event.issue.number }}/comments \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "body": "Issue processed successfully. Backend response: '$RESPONSE'"
+                }'
